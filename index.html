@@ -296,10 +296,12 @@
     <script>
         // --- Configuration ---
         // Use environment variable for backend URL in production, fallback for local dev
-        const BACKEND_URL = typeof process !== 'undefined' && process.env.BACKEND_SOCKET_URL ? process.env.BACKEND_SOCKET_URL : 'http://localhost:3001';
-        const socket = io(BACKEND_URL, {
-             transports: ['websocket'] // Force websocket for Vercel compatibility
-        });
+        const BACKEND_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://mad-ipdds.vercel.app/api' 
+    : 'http://localhost:3001';
+const socket = io(BACKEND_URL, {
+    transports: ['websocket'] // Force websocket (we’ll revisit this)
+});
 
         // --- State Variables ---
         let currentStepId = 'step-session';
