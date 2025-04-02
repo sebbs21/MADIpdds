@@ -11,8 +11,9 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: [
-            "http://localhost:5500", // Allow local dev (update port if needed)
-            "http://127.0.0.1:5500", // Allow local dev
+            //"http://localhost:5500", // Allow local dev (update port if needed)
+            //"http://127.0.0.1:5500", 
+            "https://mad-ipdds.vercel.app/",// Allow local dev
             // Add your Vercel deployment URL(s) here AFTER deploying the frontend
             // e.g., "https://your-vercel-project-name.vercel.app"
             // You might need to configure Vercel environment variables for this
