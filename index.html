@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         :root {
             --neon-cyan: #00ffff;
@@ -39,7 +38,7 @@
             border-radius: var(--border-radius);
             padding: 30px 40px;
             width: 100%;
-            max-width: 750px; /* Slightly wider */
+            max-width: 750px;
             text-align: center;
             overflow: hidden;
             position: relative;
@@ -61,7 +60,6 @@
         .loading-spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top: 4px solid var(--neon-cyan); width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .error-message { color: var(--neon-magenta); background-color: rgba(255, 0, 255, 0.1); border: 1px solid var(--neon-magenta); padding: 10px; border-radius: var(--border-radius); margin-top: 15px; }
-        /* Quiz styles (reusing from previous version) */
         .persona-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .persona-card { background-color: var(--card-bg); border: 1px solid var(--neon-cyan); border-radius: var(--border-radius); padding: 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; box-shadow: 0 0 5px 1px var(--glow-color); position: relative; }
         .persona-card:hover { transform: translateY(-3px); border-color: var(--neon-magenta); box-shadow: 0 0 8px 2px var(--glow-color-magenta); }
@@ -87,7 +85,6 @@
         input[type="range"]:active::-webkit-slider-thumb, input[type="range"]:focus::-webkit-slider-thumb { background: var(--neon-magenta); box-shadow: 0 0 10px 3px var(--glow-color-magenta); }
         input[type="range"]:active::-moz-range-thumb, input[type="range"]:focus::-moz-range-thumb { background: var(--neon-magenta); box-shadow: 0 0 10px 3px var(--glow-color-magenta); }
         .slider-value { font-weight: bold; color: var(--neon-cyan); min-width: 25px; text-align: right; }
-        /* Results comparison */
         .results-comparison { margin-top: 30px; text-align: left; }
         .results-comparison table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .results-comparison th, .results-comparison td { border: 1px solid var(--neon-cyan); padding: 10px; text-align: center; }
@@ -112,7 +109,6 @@
 </head>
 <body>
     <div class="container">
-
         <div class="step active" id="step-session">
             <h1>PDDS - Collaborative Score Card</h1>
             <p>Inicia una nueva sesión o únete a una existente.</p>
@@ -133,15 +129,15 @@
             <div class="session-code" id="session-code-display">------</div>
             <p class="mt-6">Esperando a que se una el Researcher...</p>
             <div class="loading-spinner"></div>
-             <div id="waiting-partner-error" class="error-message" style="display: none;"></div>
+            <div id="waiting-partner-error" class="error-message" style="display: none;"></div>
         </div>
 
-         <div class="step" id="step-joining">
-             <h2>Uniéndose a la Sesión...</h2>
-             <p>Validando código e intentando unirse...</p>
-             <div class="loading-spinner"></div>
-              <div id="joining-error" class="error-message" style="display: none;"></div>
-         </div>
+        <div class="step" id="step-joining">
+            <h2>Uniéndose a la Sesión...</h2>
+            <p>Validando código e intentando unirse...</p>
+            <div class="loading-spinner"></div>
+            <div id="joining-error" class="error-message" style="display: none;"></div>
+        </div>
 
         <div class="step" id="step-insight">
             <h2>Define Core Insight (Researcher)</h2>
@@ -170,7 +166,7 @@
             </div>
             <div class="rating-group">
                 <h3>Rate Importance to User Base</h3>
-                 <div class="radio-options">
+                <div class="radio-options">
                     <input type="radio" id="importance-niche" name="importance" value="0"><label for="importance-niche">🎯 Niche Segment</label>
                     <input type="radio" id="importance-mid" name="importance" value="1"><label for="importance-mid">📊 Mid-size Group</label>
                     <input type="radio" id="importance-broad" name="importance" value="2"><label for="importance-broad">🌐 Broad Base</label>
@@ -184,31 +180,31 @@
             <p>Rate the concept on a scale of 0 (Low) to 10 (High).</p>
             <div class="slider-container">
                 <label for="bizImpact">Business Impact (Weight: 25%)</label>
-                 <div class="slider-wrapper">
+                <div class="slider-wrapper">
                     <input type="range" id="bizImpact" name="bizImpact" min="0" max="10" value="5" oninput="updateSliderValue(this)">
                     <span class="slider-value">5</span>
-                 </div>
+                </div>
             </div>
             <div class="slider-container">
                 <label for="techFeas">Technical Feasibility (Weight: 20%)</label>
-                 <div class="slider-wrapper">
+                <div class="slider-wrapper">
                     <input type="range" id="techFeas" name="techFeas" min="0" max="10" value="5" oninput="updateSliderValue(this)">
                     <span class="slider-value">5</span>
-                 </div>
+                </div>
             </div>
             <div class="slider-container">
                 <label for="differentiation">Differentiation (Weight: 15%)</label>
-                 <div class="slider-wrapper">
+                <div class="slider-wrapper">
                     <input type="range" id="differentiation" name="differentiation" min="0" max="10" value="5" oninput="updateSliderValue(this)">
                     <span class="slider-value">5</span>
-                 </div>
+                </div>
             </div>
             <div class="slider-container">
                 <label for="scalability">Long-term Scalability (Weight: 10%)</label>
-                 <div class="slider-wrapper">
+                <div class="slider-wrapper">
                     <input type="range" id="scalability" name="scalability" min="0" max="10" value="5" oninput="updateSliderValue(this)">
                     <span class="slider-value">5</span>
-                 </div>
+                </div>
             </div>
             <button class="btn" id="submit-answers-btn">Submit Answers</button>
         </div>
@@ -217,18 +213,16 @@
             <h2>Respuestas Enviadas</h2>
             <p>Esperando las respuestas del otro participante...</p>
             <div class="loading-spinner"></div>
-             <div id="waiting-results-error" class="error-message" style="display: none;"></div>
+            <div id="waiting-results-error" class="error-message" style="display: none;"></div>
         </div>
 
         <div class="step" id="step-results">
             <h2>Resultados Finales de la Evaluación</h2>
             <p>Comparación de las puntuaciones y decisión recomendada.</p>
-
             <div class="final-score-display">
                 Puntuación Final Combinada: <span id="final-combined-score">--</span> / 100
             </div>
             <div class="decision-text" id="final-decision">--</div>
-
             <div class="results-comparison">
                 <h3>Desglose de Puntuaciones:</h3>
                 <table>
@@ -250,12 +244,12 @@
                             <td id="result-personas-pm">--</td>
                             <td id="result-personas-researcher">--</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Impact Level (0-4)</td>
                             <td id="result-impact-pm">--</td>
                             <td id="result-impact-researcher">--</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Importance (0-2)</td>
                             <td id="result-importance-pm">--</td>
                             <td id="result-importance-researcher">--</td>
@@ -265,24 +259,24 @@
                             <td id="result-persona-score-pm">-- / 10</td>
                             <td id="result-persona-score-researcher">-- / 10</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Business Impact (0-10)</td>
-                             <td id="result-bizImpact-pm">--</td>
+                            <td id="result-bizImpact-pm">--</td>
                             <td id="result-bizImpact-researcher">--</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Tech Feasibility (0-10)</td>
-                             <td id="result-techFeas-pm">--</td>
+                            <td id="result-techFeas-pm">--</td>
                             <td id="result-techFeas-researcher">--</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Differentiation (0-10)</td>
-                             <td id="result-differentiation-pm">--</td>
+                            <td id="result-differentiation-pm">--</td>
                             <td id="result-differentiation-researcher">--</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td>Scalability (0-10)</td>
-                             <td id="result-scalability-pm">--</td>
+                            <td id="result-scalability-pm">--</td>
                             <td id="result-scalability-researcher">--</td>
                         </tr>
                     </tbody>
@@ -290,28 +284,20 @@
             </div>
             <button class="btn" onclick="resetApp()">Iniciar Nueva Evaluación</button>
         </div>
-
     </div>
 
     <script>
-        // --- Configuration ---
-        // Use environment variable for backend URL in production, fallback for local dev
-        const BACKEND_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://mad-ipdds.vercel.app/api' 
-    : 'http://localhost:3001';
-const socket = io(BACKEND_URL, {
-    transports: ['websocket'] // Force websocket (we’ll revisit this)
-});
+        // Configuration
+        const BACKEND_URL = 'https://mad-ipdds.vercel.app/api';
 
-        // --- State Variables ---
+        // State Variables
         let currentStepId = 'step-session';
         let userRole = null; // 'pm' or 'researcher'
         let sessionId = null;
-        let userAnswers = {};
-        const MAX_PERSONAS = 4;
         let selectedPersonas = [];
+        const MAX_PERSONAS = 4;
 
-        // --- DOM Elements ---
+        // DOM Elements
         const steps = document.querySelectorAll('.step');
         const createSessionBtn = document.getElementById('create-session-btn');
         const joinSessionBtn = document.getElementById('join-session-btn');
@@ -319,19 +305,15 @@ const socket = io(BACKEND_URL, {
         const sessionCodeDisplay = document.getElementById('session-code-display');
         const submitAnswersBtn = document.getElementById('submit-answers-btn');
         const personaLimitMsg = document.getElementById('persona-limit-msg');
-        // Error message divs
         const sessionErrorDiv = document.getElementById('session-error');
         const waitingPartnerErrorDiv = document.getElementById('waiting-partner-error');
         const joiningErrorDiv = document.getElementById('joining-error');
         const waitingResultsErrorDiv = document.getElementById('waiting-results-error');
 
-
-        // --- Utility Functions ---
+        // Utility Functions
         function showStep(stepId) {
             console.log(`Showing step: ${stepId}`);
-            steps.forEach(step => {
-                step.classList.toggle('active', step.id === stepId);
-            });
+            steps.forEach(step => step.classList.toggle('active', step.id === stepId));
             currentStepId = stepId;
             window.scrollTo(0, 0);
         }
@@ -342,29 +324,27 @@ const socket = io(BACKEND_URL, {
                 errorDiv.textContent = message;
                 errorDiv.style.display = 'block';
             }
-             // Hide spinner if showing one in the same step
-             const stepElement = document.getElementById(currentStepId);
-             if(stepElement) {
-                 const spinner = stepElement.querySelector('.loading-spinner');
-                 if (spinner) spinner.style.display = 'none';
-             }
+            const stepElement = document.getElementById(currentStepId);
+            if (stepElement) {
+                const spinner = stepElement.querySelector('.loading-spinner');
+                if (spinner) spinner.style.display = 'none';
+            }
         }
 
         function hideError(elementId) {
-             const errorDiv = document.getElementById(elementId);
-             if (errorDiv) {
-                 errorDiv.style.display = 'none';
-             }
+            const errorDiv = document.getElementById(elementId);
+            if (errorDiv) errorDiv.style.display = 'none';
         }
 
         function resetApp() {
-            // Consider disconnecting socket? Or let server handle cleanup?
-            // For now, just reload the page for a clean state
-            window.location.reload();
+            sessionId = null;
+            userRole = null;
+            selectedPersonas = [];
+            showStep('step-session');
         }
 
-        // --- Quiz Interaction Functions (Adapted) ---
-         function togglePersona(element) {
+        // Quiz Interaction Functions
+        function togglePersona(element) {
             const personaName = element.getAttribute('data-persona');
             const isSelected = element.classList.contains('selected');
 
@@ -372,208 +352,183 @@ const socket = io(BACKEND_URL, {
                 element.classList.remove('selected');
                 selectedPersonas = selectedPersonas.filter(p => p !== personaName);
                 personaLimitMsg.classList.remove('visible');
-            } else {
-                if (selectedPersonas.length < MAX_PERSONAS) {
-                    element.classList.add('selected');
-                    selectedPersonas.push(personaName);
-                    if (selectedPersonas.length === MAX_PERSONAS) {
-                         personaLimitMsg.classList.add('visible');
-                    }
+            } else if (selectedPersonas.length < MAX_PERSONAS) {
+                element.classList.add('selected');
+                selectedPersonas.push(personaName);
+                if (selectedPersonas.length === MAX_PERSONAS) {
+                    personaLimitMsg.classList.add('visible');
                 }
             }
-         }
+        }
 
-         function updateSliderValue(slider) {
+        function updateSliderValue(slider) {
             const valueSpan = slider.nextElementSibling;
             if (valueSpan && valueSpan.classList.contains('slider-value')) {
                 valueSpan.textContent = slider.value;
             }
-         }
+        }
 
-         function collectAnswers() {
-             const answers = {};
-             if (userRole === 'researcher') {
-                 answers.insight = document.getElementById('insight-text').value || '(Not provided)';
-             } else {
-                 answers.insight = 'N/A';
-             }
+        function collectAnswers() {
+            const answers = {};
+            if (userRole === 'researcher') {
+                answers.insight = document.getElementById('insight-text').value || '(Not provided)';
+            } else {
+                answers.insight = 'N/A';
+            }
 
-             answers.selectedPersonas = [...selectedPersonas]; // Clone array
+            answers.selectedPersonas = [...selectedPersonas];
+            const impactSelected = document.querySelector('input[name="impact"]:checked');
+            answers.impactScore = impactSelected ? parseInt(impactSelected.value) : null;
+            const importanceSelected = document.querySelector('input[name="importance"]:checked');
+            answers.importanceScore = importanceSelected ? parseInt(importanceSelected.value) : null;
+            answers.bizImpact = parseInt(document.getElementById('bizImpact').value);
+            answers.techFeas = parseInt(document.getElementById('techFeas').value);
+            answers.differentiation = parseInt(document.getElementById('differentiation').value);
+            answers.scalability = parseInt(document.getElementById('scalability').value);
 
-             const impactSelected = document.querySelector('input[name="impact"]:checked');
-             answers.impactScore = impactSelected ? parseInt(impactSelected.value) : null;
+            if (answers.selectedPersonas.length === 0 || answers.impactScore === null || answers.importanceScore === null) {
+                alert("Please select at least one persona and rate both Impact and Importance.");
+                return null;
+            }
 
-             const importanceSelected = document.querySelector('input[name="importance"]:checked');
-             answers.importanceScore = importanceSelected ? parseInt(importanceSelected.value) : null;
+            return answers;
+        }
 
-             answers.bizImpact = parseInt(document.getElementById('bizImpact').value);
-             answers.techFeas = parseInt(document.getElementById('techFeas').value);
-             answers.differentiation = parseInt(document.getElementById('differentiation').value);
-             answers.scalability = parseInt(document.getElementById('scalability').value);
-
-             // Basic Validation
-             if (answers.selectedPersonas.length === 0 || answers.impactScore === null || answers.importanceScore === null) {
-                 alert("Please select at least one persona and rate both Impact and Importance before submitting.");
-                 return null; // Indicate validation failure
-             }
-
-             return answers;
-         }
-
-        // --- Socket Event Listeners ---
-        socket.on('connect', () => {
-            console.log('Connected to backend server with ID:', socket.id);
-            // Hide any previous errors on reconnect
+        // Event Handlers
+        createSessionBtn.addEventListener('click', async () => {
+            console.log('Requesting to create session...');
             hideError('session-error');
-            hideError('waiting-partner-error');
+            try {
+                const response = await fetch(`${BACKEND_URL}/create_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to create session');
+                sessionId = data.sessionId;
+                userRole = 'pm';
+                sessionCodeDisplay.textContent = sessionId;
+                showStep('step-waiting-partner');
+                pollForPartner(sessionId);
+            } catch (err) {
+                console.error('Create session error:', err);
+                displayError('session-error', `Error: ${err.message}`);
+            }
+        });
+
+        joinSessionBtn.addEventListener('click', async () => {
+            const code = sessionCodeInput.value.trim().toUpperCase();
+            if (!code) {
+                displayError('session-error', 'Please enter a session code.');
+                return;
+            }
+            console.log(`Requesting to join session: ${code}`);
+            hideError('session-error');
             hideError('joining-error');
-            hideError('waiting-results-error');
-            // If we were in a session before disconnect, maybe try rejoining? Complex, skip for now.
-            // If not in a session, ensure session step is shown
-            if (!sessionId) {
+            showStep('step-joining');
+            try {
+                const response = await fetch(`${BACKEND_URL}/join_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: code })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to join session');
+                sessionId = data.sessionId;
+                userRole = data.role;
+                document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
+                document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
+                showStep(userRole === 'researcher' ? 'step-insight' : 'step-persona');
+            } catch (err) {
+                console.error('Join session error:', err);
+                displayError('joining-error', `Error: ${err.message}`);
                 showStep('step-session');
             }
         });
 
-        socket.on('disconnect', (reason) => {
-            console.log('Disconnected from backend server:', reason);
-            // Display a persistent error/message indicating disconnection
-            alert('Connection lost to the server. Please refresh the page to reconnect.');
-            // Maybe disable buttons or show a specific overlay
-        });
-
-        socket.on('connect_error', (err) => {
-          console.error("Connection error:", err.message);
-          displayError('session-error', `Cannot connect to the server (${err.message}). Please check the connection or try again later.`);
-          // Also display error if trying to join/create
-          displayError('waiting-partner-error', `Connection error: ${err.message}`);
-          displayError('joining-error', `Connection error: ${err.message}`);
-        });
-
-        socket.on('session_created', (newSessionId) => {
-            console.log('Session created:', newSessionId);
-            sessionId = newSessionId;
-            userRole = 'pm'; // Creator is PM
-            sessionCodeDisplay.textContent = sessionId;
-            hideError('session-error');
-            showStep('step-waiting-partner');
-        });
-
-        socket.on('session_joined', (joinedSessionId, assignedRole) => {
-            console.log(`Successfully joined session ${joinedSessionId} as ${assignedRole}`);
-            sessionId = joinedSessionId;
-            userRole = assignedRole; // Should be 'researcher' if joining
-            hideError('session-error');
-            hideError('joining-error');
-
-            // Set titles based on role
-            document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
-            document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
-
-            if (userRole === 'researcher') {
-                showStep('step-insight');
-            } else {
-                showStep('step-persona'); // PM starts at persona step
-            }
-        });
-
-        socket.on('partner_joined', () => {
-            console.log('Partner has joined the session.');
-            hideError('waiting-partner-error');
-            // Set titles based on role (PM)
-             document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
-             document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
-            // PM can now start the quiz
-            showStep('step-persona');
-        });
-
-        socket.on('waiting_for_partner', () => {
-            console.log('Answers submitted, waiting for partner.');
-            hideError('waiting-results-error'); // Hide previous errors if any
-            showStep('step-waiting-results');
-        });
-
-        socket.on('results_ready', (results) => {
-            console.log('Results received:', results);
-            hideError('waiting-results-error');
-            displayResults(results);
-            showStep('step-results');
-        });
-
-        socket.on('error_message', (message) => {
-            console.error('Error from server:', message);
-            // Display error in the current context
-            if (currentStepId === 'step-session' || currentStepId === 'step-joining') {
-                 displayError('joining-error', message); // Show error on join attempt
-                 displayError('session-error', message); // Also show on main session screen
-                 showStep('step-session'); // Go back to session screen
-            } else if (currentStepId === 'step-waiting-partner') {
-                 displayError('waiting-partner-error', message);
-            } else if (currentStepId === 'step-waiting-results') {
-                 displayError('waiting-results-error', message);
-            } else {
-                 // General alert for errors during quiz?
-                 alert(`Server Error: ${message}`);
-            }
-        });
-
-        // --- Event Emitters ---
-        createSessionBtn.addEventListener('click', () => {
-            console.log('Requesting to create session...');
-            hideError('session-error'); // Clear previous errors
-            // Optional: Show a temporary loading state
-            socket.emit('create_session');
-        });
-
-        joinSessionBtn.addEventListener('click', () => {
-            const code = sessionCodeInput.value.trim().toUpperCase();
-            if (code) {
-                console.log(`Requesting to join session: ${code}`);
-                hideError('session-error');
-                hideError('joining-error');
-                showStep('step-joining'); // Show joining indicator
-                socket.emit('join_session', code);
-            } else {
-                displayError('session-error', 'Por favor, ingresa un código de sesión.');
-            }
-        });
-
-        submitAnswersBtn.addEventListener('click', () => {
+        submitAnswersBtn.addEventListener('click', async () => {
             const answers = collectAnswers();
-            if (answers && sessionId && userRole) {
-                 console.log(`Submitting answers for role ${userRole} in session ${sessionId}`);
-                 hideError('waiting-results-error'); // Clear previous errors
-                 socket.emit('submit_answers', { sessionId, role: userRole, answers });
-                 // Server will respond with 'waiting_for_partner' or 'results_ready'
-            } else {
-                console.log("Validation failed or missing session/role info.");
-                // collectAnswers() already shows an alert if validation fails
+            if (!answers) return;
+            console.log(`Submitting answers for ${userRole} in session ${sessionId}`);
+            hideError('waiting-results-error');
+            try {
+                const response = await fetch(`${BACKEND_URL}/submit_answers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, role: userRole, answers })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to submit answers');
+                if (data.results) {
+                    displayResults(data.results);
+                    showStep('step-results');
+                } else {
+                    showStep('step-waiting-results');
+                    pollForResults(sessionId);
+                }
+            } catch (err) {
+                console.error('Submit answers error:', err);
+                displayError('waiting-results-error', `Error: ${err.message}`);
             }
         });
 
-        // --- UI Logic ---
+        // Polling Functions
+        async function pollForPartner(sessionId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/check_session?sessionId=${sessionId}&role=pm`);
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Polling error');
+                    if (data.status === 'active') {
+                        clearInterval(interval);
+                        document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
+                        document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
+                        showStep('step-persona');
+                    }
+                } catch (err) {
+                    clearInterval(interval);
+                    console.error('Poll for partner error:', err);
+                    displayError('waiting-partner-error', `Error: ${err.message}`);
+                }
+            }, 2000);
+        }
+
+        async function pollForResults(sessionId) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/check_session?sessionId=${sessionId}&role=${userRole}`);
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Polling error');
+                    if (data.status === 'complete' && data.results) {
+                        clearInterval(interval);
+                        displayResults(data.results);
+                        showStep('step-results');
+                    }
+                } catch (err) {
+                    clearInterval(interval);
+                    console.error('Poll for results error:', err);
+                    displayError('waiting-results-error', `Error: ${err.message}`);
+                }
+            }, 2000);
+        }
+
+        // UI Logic
         function goToStep(stepId) {
-            // Used by buttons within the quiz steps
             showStep(stepId);
         }
 
         function displayResults(results) {
             const { finalScore, decision, pmAnswers, researcherAnswers } = results;
-
             document.getElementById('final-combined-score').textContent = finalScore;
-
-            // Display decision text and class
             const decisionEl = document.getElementById('final-decision');
             decisionEl.textContent = decision.text;
-            decisionEl.className = 'decision-text'; // Reset classes
+            decisionEl.className = 'decision-text';
             decisionEl.classList.add(decision.class);
 
-            // Helper to forjmat data or show 'N/A'
             const format = (value) => value !== null && value !== undefined ? value : '--';
             const formatList = (list) => list && list.length > 0 ? list.join(', ') : 'None';
 
-            // Populate table - PM
-            document.getElementById('result-insight-pm').textContent = 'N/A'; // PM doesn't define insight
+            document.getElementById('result-insight-pm').textContent = format(pmAnswers?.insight);
             document.getElementById('result-personas-pm').textContent = formatList(pmAnswers?.selectedPersonas);
             document.getElementById('result-impact-pm').textContent = format(pmAnswers?.impactScore);
             document.getElementById('result-importance-pm').textContent = format(pmAnswers?.importanceScore);
@@ -583,7 +538,6 @@ const socket = io(BACKEND_URL, {
             document.getElementById('result-differentiation-pm').textContent = format(pmAnswers?.differentiation);
             document.getElementById('result-scalability-pm').textContent = format(pmAnswers?.scalability);
 
-             // Populate table - Researcher
             document.getElementById('result-insight-researcher').textContent = format(researcherAnswers?.insight);
             document.getElementById('result-personas-researcher').textContent = formatList(researcherAnswers?.selectedPersonas);
             document.getElementById('result-impact-researcher').textContent = format(researcherAnswers?.impactScore);
@@ -595,11 +549,10 @@ const socket = io(BACKEND_URL, {
             document.getElementById('result-scalability-researcher').textContent = format(researcherAnswers?.scalability);
         }
 
-        // --- Initial Setup ---
+        // Initial Setup
         document.addEventListener('DOMContentLoaded', () => {
-             showStep('step-session'); // Start at the session management step
+            showStep('step-session');
         });
-
     </script>
 </body>
 </html>
