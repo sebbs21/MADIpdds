@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDDS - Collaborative Score Card</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-magenta: #ff00ff;
+            --dark-bg: #0a0a14;
+            --card-bg: rgba(10, 30, 40, 0.8);
+            --text-color: #e0e0e0;
+            --glow-color: rgba(0, 255, 255, 0.7);
+            --glow-color-magenta: rgba(255, 0, 255, 0.7);
+            --border-radius: 8px;
+            --font-main: 'Orbitron', sans-serif;
+        }
+        body {
+            font-family: var(--font-main);
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px 5px var(--glow-color);
+            border-radius: var(--border-radius);
+            padding: 30px 40px;
+            width: 100%;
+            max-width: 750px; /* Slightly wider */
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .step { display: none; animation: fadeIn 0.8s ease-in-out; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        h1, h2, h3 { color: var(--neon-cyan); text-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color); margin-bottom: 20px; }
+        h1 { font-size: 2.5em; margin-bottom: 30px; }
+        h2 { font-size: 1.8em; margin-bottom: 25px; }
+        h3 { font-size: 1.4em; margin-bottom: 15px; color: var(--neon-magenta); text-shadow: 0 0 5px var(--glow-color-magenta), 0 0 10px var(--glow-color-magenta); }
+        p { margin-bottom: 15px; line-height: 1.6; }
+        .btn { background: linear-gradient(145deg, var(--neon-cyan), var(--neon-magenta)); color: var(--dark-bg); border: none; padding: 12px 25px; border-radius: var(--border-radius); font-family: var(--font-main); font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 20px; box-shadow: 0 0 8px 2px var(--glow-color), inset 0 0 5px rgba(255, 255, 255, 0.5); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); }
+        .btn:hover, .btn:focus { box-shadow: 0 0 15px 5px var(--glow-color), 0 0 10px 3px var(--glow-color-magenta), inset 0 0 8px rgba(255, 255, 255, 0.7); transform: translateY(-2px); color: #000; }
+        .btn:disabled { background: #555; cursor: not-allowed; box-shadow: none; color: #aaa; }
+        .input-field { width: 100%; padding: 12px; margin-bottom: 20px; background-color: rgba(255, 255, 255, 0.1); border: 1px solid var(--neon-cyan); border-radius: var(--border-radius); color: var(--text-color); font-family: var(--font-main); font-size: 1em; transition: all 0.3s ease; }
+        .input-field:focus { outline: none; border-color: var(--neon-magenta); box-shadow: 0 0 10px 2px var(--glow-color-magenta); background-color: rgba(255, 255, 255, 0.15); }
+        .session-code { background-color: var(--card-bg); color: var(--neon-cyan); font-size: 1.8em; padding: 15px; border-radius: var(--border-radius); border: 1px dashed var(--neon-cyan); margin: 20px auto; display: inline-block; letter-spacing: 3px; box-shadow: 0 0 8px 2px var(--glow-color); user-select: all; }
+        .loading-spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top: 4px solid var(--neon-cyan); width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error-message { color: var(--neon-magenta); background-color: rgba(255, 0, 255, 0.1); border: 1px solid var(--neon-magenta); padding: 10px; border-radius: var(--border-radius); margin-top: 15px; }
+        /* Quiz styles (reusing from previous version) */
+        .persona-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .persona-card { background-color: var(--card-bg); border: 1px solid var(--neon-cyan); border-radius: var(--border-radius); padding: 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; box-shadow: 0 0 5px 1px var(--glow-color); position: relative; }
+        .persona-card:hover { transform: translateY(-3px); border-color: var(--neon-magenta); box-shadow: 0 0 8px 2px var(--glow-color-magenta); }
+        .persona-card.selected { border-color: var(--neon-magenta); box-shadow: 0 0 15px 5px var(--glow-color-magenta), inset 0 0 10px rgba(255, 0, 255, 0.3); background-color: rgba(50, 10, 50, 0.8); }
+        .persona-card.selected::after { content: '✓'; position: absolute; top: 5px; right: 10px; color: var(--neon-magenta); font-size: 1.5em; font-weight: bold; text-shadow: 0 0 5px var(--glow-color-magenta); }
+        .persona-card span { font-size: 2.5em; display: block; margin-bottom: 5px; }
+        .persona-limit-msg { color: var(--neon-magenta); font-size: 0.9em; height: 1.2em; margin-top: -10px; margin-bottom: 15px; visibility: hidden; }
+        .persona-limit-msg.visible { visibility: visible; }
+        .rating-group { margin-bottom: 25px; text-align: left; background-color: var(--card-bg); padding: 20px; border-radius: var(--border-radius); border: 1px solid var(--neon-cyan); box-shadow: 0 0 5px 1px var(--glow-color); }
+        .rating-group h3 { text-align: center; margin-bottom: 15px; }
+        .radio-options label { display: block; margin-bottom: 10px; cursor: pointer; position: relative; padding-left: 30px; font-size: 1em; }
+        .radio-options input[type="radio"] { position: absolute; opacity: 0; cursor: pointer; }
+        .radio-options label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 18px; width: 18px; background-color: rgba(255, 255, 255, 0.1); border: 1px solid var(--neon-cyan); border-radius: 50%; transition: all 0.2s ease; }
+        .radio-options input[type="radio"]:checked + label::before { background-color: var(--neon-cyan); border-color: var(--neon-cyan); box-shadow: 0 0 8px 2px var(--glow-color); }
+        .radio-options label::after { content: ''; position: absolute; display: none; left: 6px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; border-radius: 50%; background: var(--dark-bg); }
+        .radio-options input[type="radio"]:checked + label::after { display: block; }
+        .slider-container { margin-bottom: 20px; text-align: left; }
+        .slider-container label { display: block; margin-bottom: 8px; font-weight: bold; padding-left: 0; }
+        .slider-wrapper { display: flex; align-items: center; gap: 15px; }
+        input[type="range"] { flex-grow: 1; appearance: none; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.2); border-radius: 5px; outline: none; border: 1px solid var(--neon-cyan); cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: var(--neon-cyan); border-radius: 50%; cursor: pointer; border: 2px solid var(--dark-bg); box-shadow: 0 0 8px 2px var(--glow-color); transition: background 0.2s ease; }
+        input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--neon-cyan); border-radius: 50%; cursor: pointer; border: 2px solid var(--dark-bg); box-shadow: 0 0 8px 2px var(--glow-color); transition: background 0.2s ease; }
+        input[type="range"]:active::-webkit-slider-thumb, input[type="range"]:focus::-webkit-slider-thumb { background: var(--neon-magenta); box-shadow: 0 0 10px 3px var(--glow-color-magenta); }
+        input[type="range"]:active::-moz-range-thumb, input[type="range"]:focus::-moz-range-thumb { background: var(--neon-magenta); box-shadow: 0 0 10px 3px var(--glow-color-magenta); }
+        .slider-value { font-weight: bold; color: var(--neon-cyan); min-width: 25px; text-align: right; }
+        /* Results comparison */
+        .results-comparison { margin-top: 30px; text-align: left; }
+        .results-comparison table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .results-comparison th, .results-comparison td { border: 1px solid var(--neon-cyan); padding: 10px; text-align: center; }
+        .results-comparison th { background-color: var(--card-bg); color: var(--neon-magenta); }
+        .results-comparison td { background-color: rgba(255, 255, 255, 0.05); }
+        .final-score-display { font-size: 2em; font-weight: bold; color: var(--neon-cyan); text-shadow: 0 0 8px var(--glow-color); margin: 20px 0; }
+        .decision-text { font-size: 1.5em; font-weight: bold; margin-top: 10px; margin-bottom: 20px; }
+        .decision-text.develop { color: #00ff7f; text-shadow: 0 0 8px #00ff7f; }
+        .decision-text.test { color: #ffa500; text-shadow: 0 0 8px #ffa500; }
+        .decision-text.discard { color: #ff4500; text-shadow: 0 0 8px #ff4500; }
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 2em; }
+            h2 { font-size: 1.5em; }
+            .persona-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+            .btn { font-size: 1em; padding: 10px 20px; }
+            .slider-wrapper { flex-direction: column; align-items: stretch; }
+            .slider-value { text-align: center; margin-top: 5px; }
+            .results-comparison th, .results-comparison td { padding: 6px; font-size: 0.9em;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="step active" id="step-session">
+            <h1>PDDS - Collaborative Score Card</h1>
+            <p>Inicia una nueva sesión o únete a una existente.</p>
+            <div id="session-error" class="error-message" style="display: none;"></div>
+            <div>
+                <button class="btn" id="create-session-btn">Crear Nueva Sesión (como PM)</button>
+            </div>
+            <div class="mt-8">
+                <label for="session-code-input" class="block mb-2">O ingresa el código de sesión (como Researcher):</label>
+                <input type="text" id="session-code-input" class="input-field max-w-xs mx-auto uppercase" placeholder="XYZ123">
+                <button class="btn" id="join-session-btn">Unirse a Sesión</button>
+            </div>
+        </div>
+
+        <div class="step" id="step-waiting-partner">
+            <h2>Sesión Creada</h2>
+            <p>Comparte este código con el Researcher:</p>
+            <div class="session-code" id="session-code-display">------</div>
+            <p class="mt-6">Esperando a que se una el Researcher...</p>
+            <div class="loading-spinner"></div>
+             <div id="waiting-partner-error" class="error-message" style="display: none;"></div>
+        </div>
+
+         <div class="step" id="step-joining">
+             <h2>Uniéndose a la Sesión...</h2>
+             <p>Validando código e intentando unirse...</p>
+             <div class="loading-spinner"></div>
+              <div id="joining-error" class="error-message" style="display: none;"></div>
+         </div>
+
+        <div class="step" id="step-insight">
+            <h2>Define Core Insight (Researcher)</h2>
+            <p>Articulate the user need or opportunity you've uncovered.</p>
+            <textarea id="insight-text" class="input-field" rows="4" placeholder="e.g., Students need faster, on-demand beauty services between classes..."></textarea>
+            <button class="btn" onclick="goToStep('step-persona')">Define Personas</button>
+        </div>
+
+        <div class="step" id="step-persona">
+            <h2 id="persona-title">Persona Alignment Matrix</h2>
+            <p>Select up to 4 key personas impacted by this concept.</p>
+            <div class="persona-grid">
+                <div class="persona-card" data-persona="College Student" onclick="togglePersona(this)"><span>🧑‍🎓</span> College Student</div>
+                <div class="persona-card" data-persona="Working Parent" onclick="togglePersona(this)"><span>👩‍💻</span> Working Parent</div>
+                <div class="persona-card" data-persona="Night Owl Gamer" onclick="togglePersona(this)"><span>🕹️</span> Night Owl Gamer</div>
+                <div class="persona-card" data-persona="Beauty Lover" onclick="togglePersona(this)"><span>💄</span> Beauty Lover</div>
+            </div>
+            <p class="persona-limit-msg" id="persona-limit-msg">Maximum 4 personas selected.</p>
+            <div class="rating-group">
+                <h3>Rate Impact Level</h3>
+                <div class="radio-options">
+                    <input type="radio" id="impact-subtle" name="impact" value="0"><label for="impact-subtle">🌙 Subtle Change</label>
+                    <input type="radio" id="impact-moderate" name="impact" value="2"><label for="impact-moderate">💥 Moderate Improvement</label>
+                    <input type="radio" id="impact-major" name="impact" value="4"><label for="impact-major">🚀 Major Game-Changer</label>
+                </div>
+            </div>
+            <div class="rating-group">
+                <h3>Rate Importance to User Base</h3>
+                 <div class="radio-options">
+                    <input type="radio" id="importance-niche" name="importance" value="0"><label for="importance-niche">🎯 Niche Segment</label>
+                    <input type="radio" id="importance-mid" name="importance" value="1"><label for="importance-mid">📊 Mid-size Group</label>
+                    <input type="radio" id="importance-broad" name="importance" value="2"><label for="importance-broad">🌐 Broad Base</label>
+                </div>
+            </div>
+            <button class="btn" onclick="goToStep('step-business')">Proceed to Business Factors</button>
+        </div>
+
+        <div class="step" id="step-business">
+            <h2 id="business-title">Business Factor Calibration</h2>
+            <p>Rate the concept on a scale of 0 (Low) to 10 (High).</p>
+            <div class="slider-container">
+                <label for="bizImpact">Business Impact (Weight: 25%)</label>
+                 <div class="slider-wrapper">
+                    <input type="range" id="bizImpact" name="bizImpact" min="0" max="10" value="5" oninput="updateSliderValue(this)">
+                    <span class="slider-value">5</span>
+                 </div>
+            </div>
+            <div class="slider-container">
+                <label for="techFeas">Technical Feasibility (Weight: 20%)</label>
+                 <div class="slider-wrapper">
+                    <input type="range" id="techFeas" name="techFeas" min="0" max="10" value="5" oninput="updateSliderValue(this)">
+                    <span class="slider-value">5</span>
+                 </div>
+            </div>
+            <div class="slider-container">
+                <label for="differentiation">Differentiation (Weight: 15%)</label>
+                 <div class="slider-wrapper">
+                    <input type="range" id="differentiation" name="differentiation" min="0" max="10" value="5" oninput="updateSliderValue(this)">
+                    <span class="slider-value">5</span>
+                 </div>
+            </div>
+            <div class="slider-container">
+                <label for="scalability">Long-term Scalability (Weight: 10%)</label>
+                 <div class="slider-wrapper">
+                    <input type="range" id="scalability" name="scalability" min="0" max="10" value="5" oninput="updateSliderValue(this)">
+                    <span class="slider-value">5</span>
+                 </div>
+            </div>
+            <button class="btn" id="submit-answers-btn">Submit Answers</button>
+        </div>
+
+        <div class="step" id="step-waiting-results">
+            <h2>Respuestas Enviadas</h2>
+            <p>Esperando las respuestas del otro participante...</p>
+            <div class="loading-spinner"></div>
+             <div id="waiting-results-error" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div class="step" id="step-results">
+            <h2>Resultados Finales de la Evaluación</h2>
+            <p>Comparación de las puntuaciones y decisión recomendada.</p>
+
+            <div class="final-score-display">
+                Puntuación Final Combinada: <span id="final-combined-score">--</span> / 100
+            </div>
+            <div class="decision-text" id="final-decision">--</div>
+
+            <div class="results-comparison">
+                <h3>Desglose de Puntuaciones:</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Criterio</th>
+                            <th>PM Score</th>
+                            <th>Researcher Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Insight Definition</td>
+                            <td id="result-insight-pm">N/A</td>
+                            <td id="result-insight-researcher">--</td>
+                        </tr>
+                        <tr>
+                            <td>Selected Personas</td>
+                            <td id="result-personas-pm">--</td>
+                            <td id="result-personas-researcher">--</td>
+                        </tr>
+                         <tr>
+                            <td>Impact Level (0-4)</td>
+                            <td id="result-impact-pm">--</td>
+                            <td id="result-impact-researcher">--</td>
+                        </tr>
+                         <tr>
+                            <td>Importance (0-2)</td>
+                            <td id="result-importance-pm">--</td>
+                            <td id="result-importance-researcher">--</td>
+                        </tr>
+                        <tr>
+                            <td><em>Persona Score (Calculated)</em></td>
+                            <td id="result-persona-score-pm">-- / 10</td>
+                            <td id="result-persona-score-researcher">-- / 10</td>
+                        </tr>
+                         <tr>
+                            <td>Business Impact (0-10)</td>
+                             <td id="result-bizImpact-pm">--</td>
+                            <td id="result-bizImpact-researcher">--</td>
+                        </tr>
+                         <tr>
+                            <td>Tech Feasibility (0-10)</td>
+                             <td id="result-techFeas-pm">--</td>
+                            <td id="result-techFeas-researcher">--</td>
+                        </tr>
+                         <tr>
+                            <td>Differentiation (0-10)</td>
+                             <td id="result-differentiation-pm">--</td>
+                            <td id="result-differentiation-researcher">--</td>
+                        </tr>
+                         <tr>
+                            <td>Scalability (0-10)</td>
+                             <td id="result-scalability-pm">--</td>
+                            <td id="result-scalability-researcher">--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn" onclick="resetApp()">Iniciar Nueva Evaluación</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // Use environment variable for backend URL in production, fallback for local dev
+        const BACKEND_URL = typeof process !== 'undefined' && process.env.BACKEND_SOCKET_URL ? process.env.BACKEND_SOCKET_URL : 'http://localhost:3001';
+        const socket = io(BACKEND_URL, {
+             transports: ['websocket'] // Force websocket for Vercel compatibility
+        });
+
+        // --- State Variables ---
+        let currentStepId = 'step-session';
+        let userRole = null; // 'pm' or 'researcher'
+        let sessionId = null;
+        let userAnswers = {};
+        const MAX_PERSONAS = 4;
+        let selectedPersonas = [];
+
+        // --- DOM Elements ---
+        const steps = document.querySelectorAll('.step');
+        const createSessionBtn = document.getElementById('create-session-btn');
+        const joinSessionBtn = document.getElementById('join-session-btn');
+        const sessionCodeInput = document.getElementById('session-code-input');
+        const sessionCodeDisplay = document.getElementById('session-code-display');
+        const submitAnswersBtn = document.getElementById('submit-answers-btn');
+        const personaLimitMsg = document.getElementById('persona-limit-msg');
+        // Error message divs
+        const sessionErrorDiv = document.getElementById('session-error');
+        const waitingPartnerErrorDiv = document.getElementById('waiting-partner-error');
+        const joiningErrorDiv = document.getElementById('joining-error');
+        const waitingResultsErrorDiv = document.getElementById('waiting-results-error');
+
+
+        // --- Utility Functions ---
+        function showStep(stepId) {
+            console.log(`Showing step: ${stepId}`);
+            steps.forEach(step => {
+                step.classList.toggle('active', step.id === stepId);
+            });
+            currentStepId = stepId;
+            window.scrollTo(0, 0);
+        }
+
+        function displayError(elementId, message) {
+            const errorDiv = document.getElementById(elementId);
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+             // Hide spinner if showing one in the same step
+             const stepElement = document.getElementById(currentStepId);
+             if(stepElement) {
+                 const spinner = stepElement.querySelector('.loading-spinner');
+                 if (spinner) spinner.style.display = 'none';
+             }
+        }
+
+        function hideError(elementId) {
+             const errorDiv = document.getElementById(elementId);
+             if (errorDiv) {
+                 errorDiv.style.display = 'none';
+             }
+        }
+
+        function resetApp() {
+            // Consider disconnecting socket? Or let server handle cleanup?
+            // For now, just reload the page for a clean state
+            window.location.reload();
+        }
+
+        // --- Quiz Interaction Functions (Adapted) ---
+         function togglePersona(element) {
+            const personaName = element.getAttribute('data-persona');
+            const isSelected = element.classList.contains('selected');
+
+            if (isSelected) {
+                element.classList.remove('selected');
+                selectedPersonas = selectedPersonas.filter(p => p !== personaName);
+                personaLimitMsg.classList.remove('visible');
+            } else {
+                if (selectedPersonas.length < MAX_PERSONAS) {
+                    element.classList.add('selected');
+                    selectedPersonas.push(personaName);
+                    if (selectedPersonas.length === MAX_PERSONAS) {
+                         personaLimitMsg.classList.add('visible');
+                    }
+                }
+            }
+         }
+
+         function updateSliderValue(slider) {
+            const valueSpan = slider.nextElementSibling;
+            if (valueSpan && valueSpan.classList.contains('slider-value')) {
+                valueSpan.textContent = slider.value;
+            }
+         }
+
+         function collectAnswers() {
+             const answers = {};
+             if (userRole === 'researcher') {
+                 answers.insight = document.getElementById('insight-text').value || '(Not provided)';
+             } else {
+                 answers.insight = 'N/A';
+             }
+
+             answers.selectedPersonas = [...selectedPersonas]; // Clone array
+
+             const impactSelected = document.querySelector('input[name="impact"]:checked');
+             answers.impactScore = impactSelected ? parseInt(impactSelected.value) : null;
+
+             const importanceSelected = document.querySelector('input[name="importance"]:checked');
+             answers.importanceScore = importanceSelected ? parseInt(importanceSelected.value) : null;
+
+             answers.bizImpact = parseInt(document.getElementById('bizImpact').value);
+             answers.techFeas = parseInt(document.getElementById('techFeas').value);
+             answers.differentiation = parseInt(document.getElementById('differentiation').value);
+             answers.scalability = parseInt(document.getElementById('scalability').value);
+
+             // Basic Validation
+             if (answers.selectedPersonas.length === 0 || answers.impactScore === null || answers.importanceScore === null) {
+                 alert("Please select at least one persona and rate both Impact and Importance before submitting.");
+                 return null; // Indicate validation failure
+             }
+
+             return answers;
+         }
+
+        // --- Socket Event Listeners ---
+        socket.on('connect', () => {
+            console.log('Connected to backend server with ID:', socket.id);
+            // Hide any previous errors on reconnect
+            hideError('session-error');
+            hideError('waiting-partner-error');
+            hideError('joining-error');
+            hideError('waiting-results-error');
+            // If we were in a session before disconnect, maybe try rejoining? Complex, skip for now.
+            // If not in a session, ensure session step is shown
+            if (!sessionId) {
+                showStep('step-session');
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from backend server:', reason);
+            // Display a persistent error/message indicating disconnection
+            alert('Connection lost to the server. Please refresh the page to reconnect.');
+            // Maybe disable buttons or show a specific overlay
+        });
+
+        socket.on('connect_error', (err) => {
+          console.error("Connection error:", err.message);
+          displayError('session-error', `Cannot connect to the server (${err.message}). Please check the connection or try again later.`);
+          // Also display error if trying to join/create
+          displayError('waiting-partner-error', `Connection error: ${err.message}`);
+          displayError('joining-error', `Connection error: ${err.message}`);
+        });
+
+        socket.on('session_created', (newSessionId) => {
+            console.log('Session created:', newSessionId);
+            sessionId = newSessionId;
+            userRole = 'pm'; // Creator is PM
+            sessionCodeDisplay.textContent = sessionId;
+            hideError('session-error');
+            showStep('step-waiting-partner');
+        });
+
+        socket.on('session_joined', (joinedSessionId, assignedRole) => {
+            console.log(`Successfully joined session ${joinedSessionId} as ${assignedRole}`);
+            sessionId = joinedSessionId;
+            userRole = assignedRole; // Should be 'researcher' if joining
+            hideError('session-error');
+            hideError('joining-error');
+
+            // Set titles based on role
+            document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
+            document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
+
+            if (userRole === 'researcher') {
+                showStep('step-insight');
+            } else {
+                showStep('step-persona'); // PM starts at persona step
+            }
+        });
+
+        socket.on('partner_joined', () => {
+            console.log('Partner has joined the session.');
+            hideError('waiting-partner-error');
+            // Set titles based on role (PM)
+             document.getElementById('persona-title').textContent = `Persona Alignment (${userRole.toUpperCase()})`;
+             document.getElementById('business-title').textContent = `Business Factors (${userRole.toUpperCase()})`;
+            // PM can now start the quiz
+            showStep('step-persona');
+        });
+
+        socket.on('waiting_for_partner', () => {
+            console.log('Answers submitted, waiting for partner.');
+            hideError('waiting-results-error'); // Hide previous errors if any
+            showStep('step-waiting-results');
+        });
+
+        socket.on('results_ready', (results) => {
+            console.log('Results received:', results);
+            hideError('waiting-results-error');
+            displayResults(results);
+            showStep('step-results');
+        });
+
+        socket.on('error_message', (message) => {
+            console.error('Error from server:', message);
+            // Display error in the current context
+            if (currentStepId === 'step-session' || currentStepId === 'step-joining') {
+                 displayError('joining-error', message); // Show error on join attempt
+                 displayError('session-error', message); // Also show on main session screen
+                 showStep('step-session'); // Go back to session screen
+            } else if (currentStepId === 'step-waiting-partner') {
+                 displayError('waiting-partner-error', message);
+            } else if (currentStepId === 'step-waiting-results') {
+                 displayError('waiting-results-error', message);
+            } else {
+                 // General alert for errors during quiz?
+                 alert(`Server Error: ${message}`);
+            }
+        });
+
+        // --- Event Emitters ---
+        createSessionBtn.addEventListener('click', () => {
+            console.log('Requesting to create session...');
+            hideError('session-error'); // Clear previous errors
+            // Optional: Show a temporary loading state
+            socket.emit('create_session');
+        });
+
+        joinSessionBtn.addEventListener('click', () => {
+            const code = sessionCodeInput.value.trim().toUpperCase();
+            if (code) {
+                console.log(`Requesting to join session: ${code}`);
+                hideError('session-error');
+                hideError('joining-error');
+                showStep('step-joining'); // Show joining indicator
+                socket.emit('join_session', code);
+            } else {
+                displayError('session-error', 'Por favor, ingresa un código de sesión.');
+            }
+        });
+
+        submitAnswersBtn.addEventListener('click', () => {
+            const answers = collectAnswers();
+            if (answers && sessionId && userRole) {
+                 console.log(`Submitting answers for role ${userRole} in session ${sessionId}`);
+                 hideError('waiting-results-error'); // Clear previous errors
+                 socket.emit('submit_answers', { sessionId, role: userRole, answers });
+                 // Server will respond with 'waiting_for_partner' or 'results_ready'
+            } else {
+                console.log("Validation failed or missing session/role info.");
+                // collectAnswers() already shows an alert if validation fails
+            }
+        });
+
+        // --- UI Logic ---
+        function goToStep(stepId) {
+            // Used by buttons within the quiz steps
+            showStep(stepId);
+        }
+
+        function displayResults(results) {
+            const { finalScore, decision, pmAnswers, researcherAnswers } = results;
+
+            document.getElementById('final-combined-score').textContent = finalScore;
+
+            // Display decision text and class
+            const decisionEl = document.getElementById('final-decision');
+            decisionEl.textContent = decision.text;
+            decisionEl.className = 'decision-text'; // Reset classes
+            decisionEl.classList.add(decision.class);
+
+            // Helper to format data or show 'N/A'
+            const format = (value) => value !== null && value !== undefined ? value : '--';
+            const formatList = (list) => list && list.length > 0 ? list.join(', ') : 'None';
+
+            // Populate table - PM
+            document.getElementById('result-insight-pm').textContent = 'N/A'; // PM doesn't define insight
+            document.getElementById('result-personas-pm').textContent = formatList(pmAnswers?.selectedPersonas);
+            document.getElementById('result-impact-pm').textContent = format(pmAnswers?.impactScore);
+            document.getElementById('result-importance-pm').textContent = format(pmAnswers?.importanceScore);
+            document.getElementById('result-persona-score-pm').textContent = `${format(pmAnswers?.personaScore)} / 10`;
+            document.getElementById('result-bizImpact-pm').textContent = format(pmAnswers?.bizImpact);
+            document.getElementById('result-techFeas-pm').textContent = format(pmAnswers?.techFeas);
+            document.getElementById('result-differentiation-pm').textContent = format(pmAnswers?.differentiation);
+            document.getElementById('result-scalability-pm').textContent = format(pmAnswers?.scalability);
+
+             // Populate table - Researcher
+            document.getElementById('result-insight-researcher').textContent = format(researcherAnswers?.insight);
+            document.getElementById('result-personas-researcher').textContent = formatList(researcherAnswers?.selectedPersonas);
+            document.getElementById('result-impact-researcher').textContent = format(researcherAnswers?.impactScore);
+            document.getElementById('result-importance-researcher').textContent = format(researcherAnswers?.importanceScore);
+            document.getElementById('result-persona-score-researcher').textContent = `${format(researcherAnswers?.personaScore)} / 10`;
+            document.getElementById('result-bizImpact-researcher').textContent = format(researcherAnswers?.bizImpact);
+            document.getElementById('result-techFeas-researcher').textContent = format(researcherAnswers?.techFeas);
+            document.getElementById('result-differentiation-researcher').textContent = format(researcherAnswers?.differentiation);
+            document.getElementById('result-scalability-researcher').textContent = format(researcherAnswers?.scalability);
+        }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+             showStep('step-session'); // Start at the session management step
+        });
+
+    </script>
+</body>
+</html>

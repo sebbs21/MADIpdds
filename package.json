@@ -1,0 +1,18 @@
+{
+    "name": "pdds-collab-backend",
+    "version": "1.0.0",
+    "description": "Backend for PDDS Collaborative Score Card",
+    "main": "api/index.js",
+    "scripts": {
+      "start": "node api/index.js",
+      "dev": "nodemon api/index.js"
+    },
+    "dependencies": {
+      "express": "^4.19.2",
+      "socket.io": "^4.7.5",
+      "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+      "nodemon": "^3.1.0"
+    }
+  }
